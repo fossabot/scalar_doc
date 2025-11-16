@@ -35,6 +35,8 @@ def parse_theme(toml_config: dict) -> ScalarTheme:
 
     config_theme = toml_config.get("theme", {})
     base_theme.favicon_url = config_theme.get("favicon_url", None)
+    base_theme.logo_url = config_theme.get("logo_url", None)
+    base_theme.logo_url_dark = config_theme.get("logo_url_dark", None)
 
     for key, value in config_theme.get("light", {}).items():
         setattr(base_theme.color_scheme_light, key, value)
