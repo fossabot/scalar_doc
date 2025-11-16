@@ -201,7 +201,6 @@ class ScalarDoc:
             self.__openapi_json = spec
         else:
             raise ValueError("mode must be 'url' or 'json'")
-        self.__openapi_mode = mode
 
     def set_title(self, title: str):
         self.__title = title
