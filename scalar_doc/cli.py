@@ -75,7 +75,9 @@ def main():
     theme = parse_theme(config_data)
 
     if args.dry_run:
-        print("Resolved ScalarDoc configuration:\n")
+        print("Resolved ScalarDoc spec:")
+        print(json.dumps({"spec": args.spec, "mode": args.mode}, indent=2))
+        print("Resolved ScalarDoc configuration:")
         print(json.dumps(config_data, indent=2))
         sys.exit(0)
 
