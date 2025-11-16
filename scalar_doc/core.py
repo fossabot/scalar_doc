@@ -1,9 +1,35 @@
 import json
 import os
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, is_dataclass
 from typing import Any, Dict, List, Literal, Optional
 
 DEFAULT_CDN_URL = "https://cdn.jsdelivr.net/npm/@scalar/api-reference"
+
+
+def dict_to_html(object: dict):
+    def __format_value(v):
+        if v == True:
+            return "true"
+        if v == False:
+            return "false"
+        if v == None:
+            return "null"
+        if is_dataclass(v):
+            return dict_to_html(v.__dict__)
+        if isinstance(v, str):
+            return f'"{v}"'
+        if isinstance(v, Dict):
+            return dict_to_html(v)
+        return v
+
+    return (
+        "{"
+        + ",".join(
+            [f'"{key}":{__format_value(value)}' for key, value in object.items()]
+        )
+        + "}"
+    )
+
 
 @dataclass
 class ScalarConfiguration:
@@ -53,9 +79,6 @@ class ScalarConfiguration:
             for k, v in asdict(self).items()
             if v is not None
         }
-
-    def to_json(self) -> str:
-        return json.dumps(self.to_camel_case_dict())
 
 
 @dataclass
@@ -226,25 +249,26 @@ class ScalarDoc:
             ).to_html()
         return ""
 
-    def to_html(self) -> str:
-        conf = self.__scalar_configuration.to_json()
-        if self.__openapi_url:
-            spec_loader = f"""
-            <script id="api-reference" data-url="{self.__openapi_url}"></script>
-            <script>document.getElementById('api-reference').dataset.configuration = '{conf}';</script>"""
-        elif self.__openapi_json:
-            spec_loader = f"""
-            <div id="api-reference"></div>
+    @property
+    def __scalar_api_render_args(self):
+        return {
+            "configuration": self.__scalar_configuration.to_camel_case_dict(),
+            "url": self.__openapi_url if self.__openapi_url else "",
+            "spec": self.__openapi_json if self.__openapi_json else {},
+            "proxyUrl": "https://proxy.scalar.com",
+        }
+
+    def to_html(self, target_element_id: str = "api-reference") -> str:
+        target_element_data_url_attribute = (
+            f'data-url="{self.__openapi_url}"' if self.__openapi_url else ""
+        )
+        spec_loader = f"""
+            <div id="{target_element_id}" {target_element_data_url_attribute}></div>
             <script>
-                const openapiSpec = {self.__openapi_json};
-                const loaded_configuration = {conf};
-                ScalarAPI.render(document.getElementById("api-reference"), {{
-                    spec: openapiSpec,
-                    configuration: loaded_configuration
-                }});
-            </script>"""
-        else:
-            raise ValueError("Needs `openapi_url` or `openapi_dict`.")
+                window.scalarCreateApiReferenceArgs = {dict_to_html(self.__scalar_api_render_args)};
+                const initScalar = () => (Scalar.createApiReference("#{target_element_id}", {dict_to_html(self.__scalar_api_render_args)}));
+            </script>
+        """
 
         return f"""
         <!DOCTYPE html>
@@ -269,7 +293,7 @@ class ScalarDoc:
         <body>
             {self.__header_html}
             {spec_loader}
-            <script src="{self.__scalar_cdn_url}"></script>
+            <script src="{self.__scalar_cdn_url}" onload="initScalar"></script>
         </body>
         </html>
         """.strip()
