@@ -3,6 +3,7 @@ import os
 from dataclasses import asdict, dataclass, field
 from typing import Any, Dict, List, Literal, Optional
 
+DEFAULT_CDN_URL = "https://cdn.jsdelivr.net/npm/@scalar/api-reference"
 
 @dataclass
 class ScalarConfiguration:
@@ -21,6 +22,7 @@ class ScalarConfiguration:
     dark_mode_invert_colors: bool = False
     enable_search: bool = True
     persist_auth: bool = False
+    with_default_fonts: bool = True
 
     # Known to not currently work
     layout: Optional[Literal["sidebar", "stacked"]] = field(
@@ -174,18 +176,21 @@ class ScalarHeader:
 
 
 class ScalarDoc:
-    __scalar_cdn_url = "https://cdn.jsdelivr.net/npm/@scalar/api-reference"
-
-    def __init__(self):
-        self.__openapi_mode = self.__openapi_url = self.__openapi_json = None
+    def __init__(self, scalar_cdn_url: str = DEFAULT_CDN_URL):
+        self.__scalar_cdn_url = scalar_cdn_url
         self.__scalar_configuration = ScalarConfiguration()
         self.__title = "Scalar API Docs"
         self.__theme = ScalarTheme()
         self.__header = None
 
     @classmethod
-    def from_spec(cls, spec: Any, mode: Literal["url", "json"] = "url") -> "ScalarDoc":
-        obj = cls()
+    def from_spec(
+        cls,
+        spec: Any,
+        mode: Literal["url", "json"] = "url",
+        scalar_cdn_url: str = DEFAULT_CDN_URL,
+    ) -> "ScalarDoc":
+        obj = cls(scalar_cdn_url)
         obj.set_spec(spec=spec, mode=mode)
         return obj
 
