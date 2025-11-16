@@ -218,7 +218,13 @@ class ScalarDoc:
 
     @property
     def __header_html(self):
-        return self.__header.to_html() if self.__header else ""
+        if self.__header:
+            return self.__header.to_html()
+        if self.__theme.logo_url:
+            return ScalarHeader(
+                logo_url=self.__theme.logo_url, logo_url_dark=self.__theme.logo_url_dark
+            ).to_html()
+        return ""
 
     def to_html(self) -> str:
         conf = self.__scalar_configuration.to_json()
